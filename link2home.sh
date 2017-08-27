@@ -33,7 +33,8 @@ Usage: ${PROG} [options]
    options
 
      -d|--debug         debug output
-     -h|--home          link directly to $HOME
+     -c|--copydir       copy directory to home
+     -h|--home          link files directly to $HOME
      -l|--linkdir       symlink this directory itself to $HOME
      -r|--remove        remove old files
      -v|--verbose       verbose output
@@ -56,6 +57,11 @@ do
 	    d_flag="-d"
 	    shift # past argument with no value
 	    ;;
+	-c|--copydir)
+	    COPYDIR=1
+	    d_flag="-d"
+	    shift # past argument with no value
+	    ;;	
 	-l|--linkdir)
 	    LINKDIR=1
 	    d_flag="-d"
@@ -103,6 +109,13 @@ if [[ -v TOHOME ]]; then
 else
     DIR_IN_HOME="${HOME}/${BASEDIR}"
 fi
+
+if [[ -v COPYDIR ]]; then
+    [[ -v DEBUG ]] &&   echo cp -r -p ${WHERE_AM_I} ${HOME}
+    cp -r -p ${WHERE_AM_I} ${HOME}
+    exit 0
+fi
+
 
 if [[ -v LINKDIR ]]; then
 

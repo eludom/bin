@@ -1,11 +1,19 @@
 #! /bin/bash
 # Link everthing in '$PWD' to a dir in '~/$PWD'
 #
-# Put a COPY (not link) of his in any directory that should have it's
-# file linked into root.
+# Usage:
+#   install [options]   
+#
+# options from link2home.sh. Default
+#
+#  --remove --debug --verbose
+# 
 
 # Any files listed (one per line) in .install.ignore will be ignored
 
+
+
+ARGC=$#  # Number of args, not counting $0
 
 # get the directory of this script
 WHERE_AM_I="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -25,6 +33,13 @@ else
 fi
 
 echo Linking evertying in "${WHERE_AM_I}"  into "~/""${BASEDIR}"
-${LINK2HOME} -v -d -r
+
+
+if [[ $ARGC -gt 1  ]]; then
+    echo using args ${LINK2HOME} $*
+else
+    # default args
+    ${LINK2HOME} --verbose --debug --remove   
+fi
 
 # any directory specific post-processing (permissions, etc) goes here.

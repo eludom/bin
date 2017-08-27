@@ -1,11 +1,29 @@
 #! /bin/bash
-# change aws, ssh and gpg credentials
+# change credentials
 #
-# Usage
+# Usage: be [options] who
+
+#    arguments
+#      who               name of identity
 #
-#   be [options] NAME
-#   be [options] --whoami
-#   be [options] --list
+#    options
+#
+#     Select credentials
+#
+#     -a|--aws		change/list aws credentials ONLY
+#     -g|--gnupg		change/list gnupgcredentials ONLY
+#     -p|--pass		change/list pas credentials ONLY
+#     -s|--ssh		change/list ssh credentials ONLY
+#
+#     Select operation
+#  
+#     -l|--list		list availabe credentials.
+#     -w|--whoami        list current identities
+#
+#     Other
+#
+#     -v|--verbose       verbose output
+#     -d|--debug         debug output
 #
 #  e.g.
 #
@@ -14,12 +32,10 @@
 #   If  ~/.aws/credentials.$1 exists, link to ~/.aws/credentials
 #
 # TODO
-#  - Add gpg identities
 #  - deal with git identities
 #     + Use XDG-CONFIG-HOME to switch identities?
 #       http://git.661346.n2.nabble.com/What-is-XDG-CONFIG-HOME-for-exactly-td7627117.html
 #    + See https://gist.github.com/jexchan/2351996
-#  - Switch pass(1) databases/identities
 #  - Deal with .pem files
 
 
@@ -49,17 +65,11 @@ Usage: ${PROG} [options] who
 
    options
 
-     -a|--aws		change/list aws credentials ONLY
-     -d|--debug         debug output
-     -g|--gnupg		change/list gnupgcredentials ONLY
-     -l|--list		list availabe credentials.
-     -s|--ssh		change/list ssh credentials ONLY
-     -v|--verbose       verbose output
-     -w|--whoami        list current identities
 
 END
     exit 1
 }
+
 
 function gpg_list() {
     # list available gpg credentail sets (diretories)
@@ -168,6 +178,25 @@ function ssh_become() {
 }
 
 
+function pass_list() {
+    # list available pass credentail sets (diretories)
+    info available pass credentials sets
+    ls -ld ~/.password-store.*
+}
+
+function pass_whoami() {
+    # list current pass identity
+    info Current pass credential set
+    ls -ld ~/.password-store
+}
+
+function pass_become() {
+    # change pass identity
+    rm -f ~/.gnupg || true
+    ln -s ~/.password-store."${who}" ~/.password-store
+}
+
+
 #
 # "main()" begins here
 #
@@ -176,6 +205,7 @@ function ssh_become() {
 SSH=1
 AWS=1
 GPG=1
+PASSWORD=1
 
 
 
@@ -188,6 +218,7 @@ do
             AWS=1
             unset SSH
             unset GPG
+            unset PASSWORD
             d_flag="-d"
             shift # past argument with no value
             ;;
@@ -197,9 +228,10 @@ do
             shift # past argument with no value
             ;;
         -g|--gnupg)
-            GNUPG=1
+            GPG=1
             unset AWS
             unset SSH
+            unset PASSWORD
             g_flag="-g"
             shift # past argument with no value
             ;;
@@ -208,10 +240,19 @@ do
             d_flag="-d"
             shift # past argument with no value
             ;;
+        -p|--pass)
+            PASSWORD=1
+            unset AWS
+            unset SSH
+            unset GPG
+            p_flag="-p"
+            shift # past argument with no value
+            ;;	
         -s|--ssh)
             SSH=1
             unset AWS
             unset GPG
+            unset PASSWORD
             d_flag="-d"
             shift # past argument with no value
             ;;
@@ -242,8 +283,8 @@ if [[ !  -v LIST  && ! -v WHOAMI ]]; then
     who="${1}"
 fi
 
-if [[ ! -v SSH && ! -v AWS && ! -v GPG ]]; then
-    die "Must specify at least one of '--aws' and '--ssh' and '--gnupg'"
+if [[ ! -v SSH && ! -v AWS && ! -v PASSWORD && ! -v GPG ]]; then
+    die "Must specify at least one of '--aws' '--ssh' '--gnupg' '--pass'"
 fi
 
 # Change aws credentials
@@ -272,15 +313,29 @@ if [ -v SSH ]; then
     fi
 fi
 
-# Change ssh credentials
+# Change GPG credentials
 
 if [ -v GPG ]; then
 
     if [[ -v LIST ]]; then
+        echo GPG LIST
         gpg_list
     elif [[ -v WHOAMI ]]; then
         gpg_whoami
     else
         gpg_become
+    fi
+fi
+
+# Change pass credentials
+
+if [ -v PASSWORD ]; then
+    if [[ -v LIST ]]; then
+        echo PASSWORD LIST
+        pass_list
+    elif [[ -v WHOAMI ]]; then
+        pass_whoami
+    else
+        pass_become
     fi
 fi
