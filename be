@@ -197,6 +197,24 @@ function pass_become() {
 }
 
 
+function org_list() {
+    # list available org credentail sets (diretories)
+    info available org credentials sets
+    ls -ld ~/Org.*
+}
+
+function org_whoami() {
+    # list current org identity
+    info Current org credential set
+    ls -ld ~/Org
+}
+
+function org_become() {
+    # change org identity
+    rm -f ~/Org || true
+    ln -s ~/Org."${who}" ~/Org
+}
+
 #
 # "main()" begins here
 #
@@ -206,6 +224,7 @@ SSH=1
 AWS=1
 GPG=1
 PASSWORD=1
+ORG=1
 
 
 
@@ -219,6 +238,7 @@ do
             unset SSH
             unset GPG
             unset PASSWORD
+            unset ORG
             d_flag="-d"
             shift # past argument with no value
             ;;
@@ -232,6 +252,7 @@ do
             unset AWS
             unset SSH
             unset PASSWORD
+            unset ORG
             g_flag="-g"
             shift # past argument with no value
             ;;
@@ -240,19 +261,30 @@ do
             d_flag="-d"
             shift # past argument with no value
             ;;
+        -o|--org)
+            unset PASSWORD
+            unset AWS
+            unset SSH
+            unset GPG
+            ORG=1
+            p_flag="-p"
+            shift # past argument with no value
+            ;;
         -p|--pass)
             PASSWORD=1
             unset AWS
             unset SSH
             unset GPG
+            unset ORG	    
             p_flag="-p"
             shift # past argument with no value
-            ;;	
+            ;;		
         -s|--ssh)
             SSH=1
             unset AWS
             unset GPG
             unset PASSWORD
+            unset ORG	    
             d_flag="-d"
             shift # past argument with no value
             ;;
@@ -283,7 +315,7 @@ if [[ !  -v LIST  && ! -v WHOAMI ]]; then
     who="${1}"
 fi
 
-if [[ ! -v SSH && ! -v AWS && ! -v PASSWORD && ! -v GPG ]]; then
+if [[ ! -v SSH && ! -v AWS && ! -v ORG && ! -v PASSWORD && ! -v GPG ]]; then
     die "Must specify at least one of '--aws' '--ssh' '--gnupg' '--pass'"
 fi
 
@@ -337,5 +369,18 @@ if [ -v PASSWORD ]; then
         pass_whoami
     else
         pass_become
+    fi
+fi
+
+# Change org credentials
+
+if [ -v ORG ]; then
+    if [[ -v LIST ]]; then
+        echo ORG LIST
+        org_list
+    elif [[ -v WHOAMI ]]; then
+        org_whoami
+    else
+        org_become
     fi
 fi
