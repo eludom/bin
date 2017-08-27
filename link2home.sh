@@ -3,7 +3,7 @@
 #
 # - create a directory in $HOME with the same name as this directory
 # - link all files in this directory in the new directory
-# - exclude files listed in .ignore
+# - exclude files listed in .link2home.ignore
 
 set -e -u
 
@@ -34,7 +34,7 @@ Usage: ${PROG} [options]
 
      -d|--debug         debug output
      -h|--home          link directly to $HOME
-     -l|--linkdir       symlink directory itself
+     -l|--linkdir       symlink this directory itself to $HOME
      -r|--remove        remove old files
      -v|--verbose       verbose output
 
@@ -130,8 +130,8 @@ fi
 #
 cd "${WHERE_AM_I}"
 
-if [ -f '.ignore' ]; then
-    for exclude in `cat .ignore`; do
+if [ -f '.link2home.ignore' ]; then
+    for exclude in `cat .link2home.ignore`; do
 	EXCLUSIONS["${exclude}"]="${exclude}"
     done
 fi

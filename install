@@ -14,7 +14,17 @@ cd ${WHERE_AM_I}
 # Extract the directory name of this file
 BASEDIR=`basename $WHERE_AM_I`
 
+
+if [ -e ${HOME}/bin/link2home.sh ]; then
+   LINK2HOME="${HOME}/bin/link2home.sh"
+elif [ -e ${WHERE_AM_I}/link2home.sh ]; then
+   LINK2HOME="${WHERE_AM_I}/link2home.sh"
+else
+   echo "Can't find link2home.sh"
+   exit 1
+fi
+
 echo Linking evertying in "${WHERE_AM_I}"  into "~/""${BASEDIR}"
-~/bin/link2home.sh -v -d
+${LINK2HOME} -v -d -r
 
 # any directory specific post-processing (permissions, etc) goes here.
