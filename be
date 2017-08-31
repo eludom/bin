@@ -16,14 +16,15 @@
 #     -s|--ssh		change/list ssh credentials ONLY
 #
 #     Select operation
-#  
+#
 #     -l|--list		list availabe credentials.
 #     -w|--whoami        list current identities
 #
 #     Other
 #
-#     -v|--verbose       verbose output
 #     -d|--debug         debug output
+#     -h|--help          print usage
+#     -v|--verbose       verbose output
 #
 #  e.g.
 #
@@ -58,14 +59,30 @@ function usage() {
     fi
 
     cat <<END 1>&2
-Usage: ${PROG} [options] who
+Usage: be [options] who
 
    arguments
      who               name of identity
 
    options
 
+    Select credentials
 
+    -a|--aws		change/list aws credentials ONLY
+    -g|--gnupg		change/list gnupgcredentials ONLY
+    -p|--pass		change/list pas credentials ONLY
+    -s|--ssh		change/list ssh credentials ONLY
+
+    Select operation
+
+    -l|--list		list availabe credentials.
+    -w|--whoami        list current identities
+
+    Other
+
+    -d|--debug         debug output
+    -h|--help          print usage
+    -v|--verbose       verbose output
 END
     exit 1
 }
@@ -80,7 +97,10 @@ function gpg_list() {
 function gpg_whoami() {
     # list current gpg identity
     info Current gpg credential set
+    info
     ls -ld ~/.gnupg
+    info
+
 }
 
 function gpg_become() {
@@ -102,7 +122,9 @@ function aws_whoami() {
     cd ~/.aws || die "Error connecting to ~/.aws"
 
     info Current aws credentials
+    info
     ls -l credentials config
+    info
 }
 
 function aws_become() {
@@ -144,9 +166,11 @@ function ssh_whoami() {
     cd ~/.ssh || die "Error connecting to ~/.ssh"
 
     info Current SSH identities
+    info
     ls -l id_???  || warn "no ~/.ssh/id_{rsa,dsa} file"
     info SSH Agent Identities
     ssh-add -l
+    info
 }
 
 function ssh_become() {
@@ -187,13 +211,16 @@ function pass_list() {
 function pass_whoami() {
     # list current pass identity
     info Current pass credential set
+    info
     ls -ld ~/.password-store
+    info
 }
 
 function pass_become() {
     # change pass identity
-    rm -f ~/.gnupg || true
+    rm -f ~/.password-store || true
     ln -s ~/.password-store."${who}" ~/.password-store
+    gpg_become # need to switch GPG IDs too
 }
 
 
@@ -206,7 +233,9 @@ function org_list() {
 function org_whoami() {
     # list current org identity
     info Current org credential set
+    info
     ls -ld ~/Org
+    info
 }
 
 function org_become() {
@@ -256,6 +285,9 @@ do
             g_flag="-g"
             shift # past argument with no value
             ;;
+        -h|--help)
+            usage
+            ;;
         -l|--list)
             LIST=1
             d_flag="-d"
@@ -275,16 +307,16 @@ do
             unset AWS
             unset SSH
             unset GPG
-            unset ORG	    
+            unset ORG
             p_flag="-p"
             shift # past argument with no value
-            ;;		
+            ;;
         -s|--ssh)
             SSH=1
             unset AWS
             unset GPG
             unset PASSWORD
-            unset ORG	    
+            unset ORG
             d_flag="-d"
             shift # past argument with no value
             ;;

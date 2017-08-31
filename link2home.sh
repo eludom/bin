@@ -1,6 +1,37 @@
 #! /bin/bash
-# Symlink everything in this directory into a corresponding directory in $HOME
+# Install files in current directory to $HOME in various ways.
 #
+# By default, create a directory in $HOME with the same name
+# as the current directory, then symlink all files in this
+# directory into the target directory
+#
+# Default directories are:
+
+#    base directory   - $HOME
+#    target directory - $HOME/`basename $PWD`
+#    source directory - $PWD
+##
+# Usage: ${PROG} [options]
+#
+#    options
+#
+#      Modify the paths used
+#
+#      -p|--path=PATH     use PATH as base directory  (defalt $HOME)
+#      -t|--tobase        link/copy files directly to base directory
+#
+#      Modify the copy/link behavior
+#
+#      -l|--linkdir       symlink this directory itself to base directory
+#      -c|--copy          copy directory to target directory#
+#      -r|--remove        remove old files
+#
+#      Change debugging and output
+#
+#      -d|--debug         debug output
+#      -v|--verbose       verbose output
+#
+
 # - create a directory in $HOME with the same name as this directory
 # - link all files in this directory in the new directory
 # - exclude files listed in .link2home.ignore
@@ -19,12 +50,11 @@ function die()   { echo ${PROG}\: fatal: "$@" 1>&2 && exit 1; }
 #
 # Command line parsing
 #
-
 function usage() {
     debug "in ${FUNCNAME[0]}"
 
     if [[ "$#" -gt 0 ]]; then
-	warn $@
+        warn $@
     fi
 
     cat <<END 1>&2
@@ -32,11 +62,13 @@ Usage: ${PROG} [options]
 
    options
 
-     -d|--debug         debug output
-     -c|--copydir       copy directory to home
-     -h|--home          link files directly to $HOME
-     -l|--linkdir       symlink this directory itself to $HOME
+     -c|--copy          copy directory to target directory
+     -l|--linkdir       symlink this directory itself to base directory
+     -p|--path=PATH     use PATH as base directory  (defalt $HOME)
      -r|--remove        remove old files
+     -t|--tobase        link files directly to base directory
+
+     -d|--debug         debug output
      -v|--verbose       verbose output
 
 END
@@ -52,39 +84,45 @@ declare -A EXCLUSIONS
 for i in "$@"
 do
     case $i in
-	-d|--debug)
-	    DEBUG=1
-	    d_flag="-d"
-	    shift # past argument with no value
-	    ;;
-	-c|--copydir)
-	    COPYDIR=1
-	    d_flag="-d"
-	    shift # past argument with no value
-	    ;;	
-	-l|--linkdir)
-	    LINKDIR=1
-	    d_flag="-d"
-	    shift # past argument with no value
-	    ;;
-	-h|--home)
-	    TOHOME=1
-	    d_flag="-d"
-	    shift # past argument with no value
-	    ;;
-	-r|--remove)
-	    REMOVE=1
-	    # remove old files
-	    shift # past argument with no value
-	    ;;
-	-v|--verbose)
-	    VERBOSE=1
-	    v_flag="-v"
-	    shift # past argument with no value
-	    ;;
-	-*|--*)
-	    usage "Unknown state option: $i"
-	    ;;
+        -d|--debug)
+            DEBUG=1
+            d_flag="-d"
+            shift # past argument with no value
+            ;;
+        -c|--copy)
+            COPYDIR=1
+            d_flag="-d"
+            shift # past argument with no value
+            ;;
+        -l|--linkdir)
+            LINKDIR=1
+            d_flag="-d"
+            shift # past argument with no value
+            ;;
+        -p=*|--PATH=*)
+            TOPATH=1
+            TO_PATH="${i#*=}"
+            p_flag="-d"
+            shift # past argument=value
+            ;;
+        -r|--remove)
+            REMOVE=1
+            # remove old files
+            shift # past argument with no value
+            ;;
+        -t|--tobase)
+            TOBASE=1
+            d_flag="-d"
+            shift # past argument with no value
+            ;;
+        -v|--verbose)
+            VERBOSE=1
+            v_flag="-v"
+            shift # past argument with no value
+            ;;
+        -*|--*)
+            usage "Unknown state option: $i"
+            ;;
     esac
 done
 
@@ -100,54 +138,81 @@ fi
 WHERE_AM_I=`pwd`
 
 # Extract the directory name of this file
-BASEDIR=`basename $WHERE_AM_I`
+CURRENT_BASEDIR=`basename $WHERE_AM_I`
 
-# create name of directory in $HOME
 
-if [[ -v TOHOME ]]; then
-    DIR_IN_HOME="${HOME}"
-else
-    DIR_IN_HOME="${HOME}/${BASEDIR}"
+# Determine which directory to use as "HOME"
+
+BASEDIR="${HOME}"
+
+if [[ -v TOPATH ]]; then
+    BASEDIR="${TO_PATH}"
 fi
 
+# Determine final destinaiton dir
+
+if [[ -v TOBASE ]]; then
+    FINAL_DIR="${BASEDIR}"
+else
+    FINAL_DIR="${BASEDIR}/${CURRENT_BASEDIR}"
+fi
+
+# if copying, just do it and stop
+
 if [[ -v COPYDIR ]]; then
-    [[ -v DEBUG ]] &&   echo cp -r -p ${WHERE_AM_I} ${HOME}
-    cp -r -p ${WHERE_AM_I} ${HOME}
+    [[ -v DEBUG ]] &&   echo cp -r -p ${WHERE_AM_I} ${FINAL_DIR}
+    cp -r -p ${WHERE_AM_I} ${FINAL_DIR}
     exit 0
 fi
 
+
+# Link this directory into FINAL_DIR
 
 if [[ -v LINKDIR ]]; then
 
     if [ -v REMOVE ]; then
 
-	if [[ "${HOME}" == "${DIR_IN_HOME}" ]]; then
-	    [[ -v VERBOSE ]] &&  info not removing "${HOME}"
-	else
-	  rm -f "${DIR_IN_HOME}"
-	  [[ -v VERBOSE ]] &&  info rm -f "${DIR_IN_HOME}"
-	fi
+        # never remove HOME !!!
+
+        if [[ "${HOME}" == "${FINAL_DIR}" ]]; then
+            [[ -v VERBOSE ]] &&  info not removing "${HOME}"
+        else
+          rm -f "${FINAL_DIR}"
+          [[ -v VERBOSE ]] &&  info rm -f "${FINAL_DIR}"
+        fi
     fi
 
-    [[ -v VERBOSE ]] &&  info ln -s "${WHERE_AM_I}" "${DIR_IN_HOME}"
-    ln -s "${WHERE_AM_I}"  "${DIR_IN_HOME}" || warn "Unable to link ${WHERE_AM_I}"
+    [[ -v VERBOSE ]] &&  info ln -s "${WHERE_AM_I}" "${FINAL_DIR}"
+    ln -s "${WHERE_AM_I}"  "${FINAL_DIR}" || warn "Unable to link ${WHERE_AM_I}"
 
     exit 0
 else
     # crate the directory name in $HOME if DNE
-    mkdir -p "${DIR_IN_HOME}"
+    mkdir -p "${FINAL_DIR}"
+fi
+
+
+#
+#  Everything from here is releative to source directory
+#
+
+
+cd "${WHERE_AM_I}"
+
+#
+#  Ignore files listed in .link2home.ignore
+#
+
+
+if [ -f '.link2home.ignore' ]; then
+    for exclude in `cat .link2home.ignore`; do
+        EXCLUSIONS["${exclude}"]="${exclude}"
+    done
 fi
 
 #
 # symlink everything here to $HOME
 #
-cd "${WHERE_AM_I}"
-
-if [ -f '.link2home.ignore' ]; then
-    for exclude in `cat .link2home.ignore`; do
-	EXCLUSIONS["${exclude}"]="${exclude}"
-    done
-fi
 
 debug linking files
 
@@ -155,26 +220,26 @@ debug linking files
 for file in * .[a-z0-9A-Z_\-]*; do
 
     SOURCE="${WHERE_AM_I}/${file}"
-    TARGET="${DIR_IN_HOME}/${file}"
+    TARGET="${FINAL_DIR}/${file}"
 
     [ -e "${file}" ] || continue
 
     if [ ${EXCLUSIONS["${file}"]+DNE} ]; then
-	info skiping "${file}"
+        info skiping "${file}"
     else
 
-	if [ -v REMOVE ]; then
+        if [ -v REMOVE ]; then
 
-	    [[ -v VERBOSE ]] &&  info rm -f "${DIR_IN_HOME}/${file}"
-	    rm -f "${DIR_IN_HOME}/${file}"
-	fi
+            [[ -v VERBOSE ]] &&  info rm -f "${FINAL_DIR}/${file}"
+            rm -f "${FINAL_DIR}/${file}"
+        fi
 
-	if [ -h "${TARGET}" ]; then
-	    [[ -v VERBOSE ]] &&  info "${TARGET}" already exists. Skipping.
-	else
-	    [[ -v VERBOSE ]] &&  info ln -s "${SOURCE}" "${DIR_IN_HOME}"
-	    ln -s "${SOURCE}"  "${DIR_IN_HOME}" || warn "Unable to link ${SOURCE}"
-	fi
+        if [ -h "${TARGET}" ]; then
+            [[ -v VERBOSE ]] &&  info "${TARGET}" already exists. Skipping.
+        else
+            [[ -v VERBOSE ]] &&  info ln -s "${SOURCE}" "${FINAL_DIR}"
+            ln -s "${SOURCE}"  "${FINAL_DIR}" || warn "Unable to link ${SOURCE}"
+        fi
 
     fi
 
