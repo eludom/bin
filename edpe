@@ -1,0 +1,6 @@
+#! /bin/bash
+# Allow ed to be usd to edit pipe
+#
+# Usage cat FOO | edpe > BAR
+
+(F=$(mktemp) ; cat > $F ; ed $F </dev/tty >/dev/tty ; cat $F ; rm $F)
