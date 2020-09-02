@@ -3,6 +3,15 @@
 #
 # Usage: some [[-#] FILE]
 
+# Helper functions
+PROG=`basename "$0" | tr -d '\n'`
+
+function info()  { echo ${PROG}\: info: "$@" 1>&2; }
+function warn()  { echo ${PROG}\: warning: "$@" 1>&2; }
+function error() { echo ${PROG}\: error: "$@" 1>&2; }
+function debug() { [[ -v DEBUG ]] && echo ${PROG}\: debug: "$@" 1>&2 || true ; }
+function die()   { echo ${PROG}\: fatal: "$@" 1>&2 && exit 1; }
+
 function someFunc {
     # Functon to print "some" lines of a file, like head or tail but, random start
     #
@@ -15,7 +24,8 @@ function someFunc {
 
     HOW_MANY=10 # Number of lines to print.  Default.
     FILE="/dev/stdin" # default
-
+    SOMELOG=${HOME}/.somelog # log of queries in case you want to find that chunk again
+    MAXLOG=10
 
     if [ "$#" -eq 0 ]; then
         :
@@ -42,10 +52,17 @@ function someFunc {
 
     # pick a random starting line at least HOW_MANY back from the end
     FIRST=$((1 + RANDOM % (LINES - HOW_MANY + 1 )))
+    FIRST=$((FIRST>LINES ? LINES : FIRST))
+
     LAST=$((FIRST + HOW_MANY - 1))
+    LAST=$((LAST>LINES ? LINES : LAST))
 
     # display line numbers to stderr to allow re-extraction of randomly chosen lines
-    >&2 echo some: lines $FIRST to $LAST of $FILE
+    echo some: lines $FIRST to $LAST \(of $LINES\) of $FILE |& tee /dev/stderr >> ${SOMELOG}
+    # only keep MAXLOG lines of SOMELOG
+    mv ${SOMELOG} ${SOMELOG}.$$ && tail -${MAXLOG} ${SOMELOG}.$$ > ${SOMELOG}
+
+
 
     # Let's see some lines !
     awk "NR >= $FIRST && NR <= $LAST" $FILE
