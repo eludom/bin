@@ -60,7 +60,7 @@ function someFunc {
     # display line numbers to stderr to allow re-extraction of randomly chosen lines
     echo some: lines $FIRST to $LAST \(of $LINES\) of $FILE |& tee /dev/stderr >> ${SOMELOG}
     # only keep MAXLOG lines of SOMELOG
-    mv ${SOMELOG} ${SOMELOG}.$$ && tail -${MAXLOG} ${SOMELOG}.$$ > ${SOMELOG}
+    mv ${SOMELOG} ${SOMELOG}.$$ && tail -${MAXLOG} ${SOMELOG}.$$ > ${SOMELOG} && rm ${SOMELOG}.$$
 
 
 
