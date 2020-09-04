@@ -68,8 +68,27 @@ function someLines {
 }
 
 function usage() {
-    warn ${1:-""}
-    die "Usage: $PROG [-#] [FILENAME]"
+    if [ "$1" != "" ]; then
+        warn "${1}"
+    fi
+
+    USAGE=$(cat <<-END
+
+
+Usage: $PROG [options] [FILENAME]
+
+    Print some random lines from a file
+
+options:
+    -#            The number of lines to print.   Default 10.
+    -h            Print usage.
+
+arguments:
+    FILENAME      The file to sample.  Default /dev/stdin
+END
+)
+    info "$USAGE"
+
 }
 
 
@@ -97,6 +116,12 @@ function main() {
                 HOW_MANY=`echo $HOW_MANY | sed 's/^-//'`
                 shift
                 ;;
+
+            -h)     # Use +1 to access next array element and unset it
+                usage ""
+                exit 0
+                ;;
+
             --)             # End of arguments
                 unset 'ARGS[i]'
                 break
@@ -111,11 +136,13 @@ function main() {
 
     FILE=${1:-"/dev/stdin"}
 
-    if [ "$#" -gt 2 ]; then
+    if [ "$#" -gt 1 ]; then
         usage "Too many arguments"
+        exit 1
     fi
 
     someLines $FILE $HOW_MANY
+
 }
 
 
