@@ -3,6 +3,8 @@
 #
 # Usage: some [[-#] FILE]
 
+set -e; set -u; set -o pipefail # be safe out there
+
 # Helper functions
 PROG=`basename "$0" | tr -d '\n'`
 
@@ -11,6 +13,7 @@ function warn()  { echo `date +%c` ${PROG}\: warning: "$@" 1>&2; }
 function error() { echo `date +%c` ${PROG}\: error: "$@" 1>&2; }
 function debug() { [[ -v DEBUG ]] && echo `date +%c` ${PROG}\: debug: "$@" 1>&2 || true ; }
 function die()   { echo `date +%c` ${PROG}\: fatal: "$@" 1>&2 && exit 1; }
+
 
 function truncate() {
     # trunchate a FILE to MAXLINES
@@ -28,7 +31,7 @@ function truncate() {
 
 
 
-function someFunc {
+function someLines {
     # Functon to print "some" lines of a file, like head or tail but, random start
     #
     # ARGS:
@@ -36,34 +39,9 @@ function someFunc {
     #   $1 - "-#" or FILENAME if only one arg
     #   $2 - FILENAME if present
 
-    set -e; set -u; set -o pipefail # be safe out there
+    local FILE=$1
+    local HOW_MANY=$2
 
-    HOW_MANY=10 # Number of lines to print.  Default.
-    FILE="/dev/stdin" # default
-    SOMELOG=${HOME}/.somelog # log of queries in case you want to find that chunk again
-    MAXLOG=10
-
-    if [ "$#" -eq 0 ]; then
-        :
-    elif [ "$#" -eq 1 ]; then
-        if [[ "$1" =~ -[0-9] ]]; then
-            HOW_MANY=`echo "$1" | sed 's/^-//'`
-        else
-            FILE="$1"
-        fi
-
-    elif [ "$#" -eq 2 ]; then
-        if [[ "$1" =~ -[0-9] ]]; then
-            HOW_MANY=`echo "$1" | sed 's/^-//'`
-        else
-            echo "some: Usage: some [-# [FILE]]"
-            return
-        fi
-
-        FILE="$2"
-    fi
-    # TODO add real getopt parsing
-    # TODO add -m|middle option to select lines from the middle
 
     # Count the lines to bound display
     LINES=`wc -l $FILE | sed -e 's/ .*//'`
@@ -73,20 +51,73 @@ function someFunc {
     #         - revert to head-like behavior (with a timeout?)  (since we have no idea how long stdin is)
 
     # pick a random starting line at least HOW_MANY back from the end
-    FIRST=$((1 + RANDOM % (LINES - HOW_MANY + 1 )))
+    FIRST=$((1 + RANDOM % (LINES - HOW_MANY + 1)))
     FIRST=$((FIRST>LINES ? LINES : FIRST))
 
     LAST=$((FIRST + HOW_MANY - 1))
     LAST=$((LAST>LINES ? LINES : LAST))
 
     # log line numbers to allow re-extraction of randomly chosen lines
-    info lines $FIRST to $LAST \(of $LINES\) of `readlink -f $FILE` |& tee /dev/stderr >> ${SOMELOG}
+    info lines $FIRST to $LAST \(of $LINES\) of `readlink -f $FILE` |& cat  >> ${SOMELOG}
 
     # only keep MAXLOG lines of SOMELOG
     truncate $SOMELOG $MAXLOG
 
-    # Let's see some lines !
+    # Lets see some lines !
     awk "NR >= $FIRST && NR <= $LAST" $FILE
 }
 
-someFunc $*
+function usage() {
+    warn ${1:-""}
+    die "Usage: $PROG [-#] [FILENAME]"
+}
+
+
+function main() {
+    # main - parse args, set defaults, call someLines
+
+    # Bash Version 3 required (it also works with ksh)
+    [[ ${BASH_VERSINFO[0]} -lt 3 ]] && exit 1
+
+    # Defaults
+    local HOW_MANY=10 # Number of lines to print.  Default.
+    local SOMELOG="${HOME}/.somelog" # log of queries in case you want to find that chunk again
+    local MAXLOG=10
+
+    # Put all arguments in a new array (because BASH_ARGV is read only)
+    ARGS=( "$@" )
+
+    for i in "${!ARGS[@]}"; do
+        case "${ARGS[i]}" in
+            '')             # Skip if element is empty (happens when its unsetted before)
+                continue
+                ;;
+            -[0-9]*)     # Use +1 to access next array element and unset it
+                HOW_MANY="${ARGS[i]}"
+                HOW_MANY=`echo $HOW_MANY | sed 's/^-//'`
+                shift
+                ;;
+            --)             # End of arguments
+                unset 'ARGS[i]'
+                break
+                ;;
+            *)              # Skip unset if our argument has not been matched
+                continue
+                ;;
+        esac
+        unset 'ARGS[i]'
+    done
+    # TODO add -n argumet to print line numbers
+
+    FILE=${1:-"/dev/stdin"}
+
+    if [ "$#" -gt 2 ]; then
+        usage "Too many arguments"
+    fi
+
+    someLines $FILE $HOW_MANY
+}
+
+
+
+main $*
