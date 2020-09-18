@@ -69,6 +69,7 @@ function someLines {
 
 function usage() {
     if [ "$1" != "" ]; then
+        # TODO allow for undefined $1.  Now, have to set to "" or get undefined error.
         warn "${1}"
     fi
 
