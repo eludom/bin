@@ -138,7 +138,7 @@ function gpg_become() {
 
 function aws_list() {
     # list available aws credentials
-    cd ~/.aws || die "Error connecting to ~/.aws"
+    cd ~/.aws && warn "No ~/.aws credentials" && echo && return 
 
     info available AWS credentials and configs
     ls -ld credentials.* config.* || true
@@ -147,7 +147,7 @@ function aws_list() {
 
 function aws_whoami() {
     # list current aws identity
-    cd ~/.aws || die "Error connecting to ~/.aws"
+    cd ~/.aws || warn "No ~/.aws credentials" && echo && return 
 
     info Current aws credentials
     info
@@ -157,7 +157,7 @@ function aws_whoami() {
 
 function aws_become() {
     # change aws identity
-    cd ~/.aws || die "Error connecting to ~/.aws"
+    cd ~/.aws || warn "No ~/.aws credentials" && echo && return 
 
     aws_creds="credentials.""${who}"
     if [ ! -f "${aws_creds}"  ]; then
@@ -183,7 +183,7 @@ function aws_become() {
 
 function ssh_list() {
     # list available ssh credentials
-    cd ~/.ssh || die "Error connecting to ~/.ssh"
+    cd ~/.ssh || warn "No ~/.ssh credentials" && echo && return 
 
     info available SSH credentials
     ls -ld id_rsa.* id_dsa.* authorized_keys.* || true
@@ -192,7 +192,8 @@ function ssh_list() {
 
 function ssh_whoami() {
     # list current ssh identity
-    cd ~/.ssh || die "Error connecting to ~/.ssh"
+    cd ~/.ssh || warn "No ~/.ssh credentials" && echo && return 
+    
 
     info Current SSH identities
     info
@@ -205,7 +206,7 @@ function ssh_whoami() {
 
 function ssh_become() {
     # change ssh identity
-    cd ~/.ssh || die "Error connecting to ~/.ssh"
+    cd ~/.ssh || warn "No ~/.ssh credentials" && echo && return 
 
     rsa_creds="id_rsa.""${who}"
     dsa_creds="id_dsa.""${who}"
