@@ -68,6 +68,8 @@
 
 set -e; set -u # this is bash.  Be safe out there.
 
+unalias cd 2>/dev/null || true
+
 # Helper functions
 PROG=`basename "$0" | tr -d '\n'`
 
@@ -138,7 +140,7 @@ function gpg_become() {
 
 function aws_list() {
     # list available aws credentials
-    cd ~/.aws && warn "No ~/.aws credentials" && echo && return 
+    if ! cd ~/.aws; then warn "No ~/.aws credentials"; echo; return; fi
 
     info available AWS credentials and configs
     ls -ld credentials.* config.* || true
@@ -147,7 +149,8 @@ function aws_list() {
 
 function aws_whoami() {
     # list current aws identity
-    cd ~/.aws || warn "No ~/.aws credentials" && echo && return 
+    echo foo
+    if ! cd ~/.aws; then warn "No ~/.aws credentials"; echo; return; fi    
 
     info Current aws credentials
     info
@@ -157,7 +160,7 @@ function aws_whoami() {
 
 function aws_become() {
     # change aws identity
-    cd ~/.aws || warn "No ~/.aws credentials" && echo && return 
+    if ! cd ~/.aws; then warn "No ~/.aws credentials"; echo; return; fi
 
     aws_creds="credentials.""${who}"
     if [ ! -f "${aws_creds}"  ]; then
@@ -183,7 +186,7 @@ function aws_become() {
 
 function ssh_list() {
     # list available ssh credentials
-    cd ~/.ssh || warn "No ~/.ssh credentials" && echo && return 
+    if ! cd ~/.ssh; then warn "No ~/.ssh credentials"; echo; return; fi
 
     info available SSH credentials
     ls -ld id_rsa.* id_dsa.* authorized_keys.* || true
@@ -192,9 +195,8 @@ function ssh_list() {
 
 function ssh_whoami() {
     # list current ssh identity
-    cd ~/.ssh || warn "No ~/.ssh credentials" && echo && return 
+    if ! cd ~/.ssh; then warn "No ~/.ssh credentials"; echo; return; fi
     
-
     info Current SSH identities
     info
     ls -ld id_???  || warn "no ~/.ssh/id_{rsa,dsa} file"
@@ -206,8 +208,8 @@ function ssh_whoami() {
 
 function ssh_become() {
     # change ssh identity
-    cd ~/.ssh || warn "No ~/.ssh credentials" && echo && return 
-
+    if ! cd ~/.ssh; then warn "No ~/.ssh credentials"; echo; return; fi
+    
     rsa_creds="id_rsa.""${who}"
     dsa_creds="id_dsa.""${who}"
     authorized_keys="authorized_keys.""${who}"
