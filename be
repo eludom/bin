@@ -91,14 +91,15 @@ END
 function gpg_list() {
     # list available gpg credentail sets (diretories)
     info available GPG credentials sets
-    ls -ld ~/.gnupg.*
+    ls -ld ~/.gnupg.* || true
+    echo
 }
 
 function gpg_whoami() {
     # list current gpg identity
     info Current gpg credential set
     info
-    ls -ld ~/.gnupg
+    ls -ld ~/.gnupg || true
     info
 
 }
@@ -114,7 +115,8 @@ function aws_list() {
     cd ~/.aws || die "Error connecting to ~/.aws"
 
     info available AWS credentials and configs
-    ls -ld credentials.* config.*
+    ls -ld credentials.* config.* || true
+    echo
 }
 
 function aws_whoami() {
@@ -123,7 +125,7 @@ function aws_whoami() {
 
     info Current aws credentials
     info
-    ls -ld credentials config
+    ls -ld credentials config || true
     info
 }
 
@@ -158,7 +160,8 @@ function ssh_list() {
     cd ~/.ssh || die "Error connecting to ~/.ssh"
 
     info available SSH credentials
-    ls -ld id_rsa.* id_dsa.* authorized_keys.*
+    ls -ld id_rsa.* id_dsa.* authorized_keys.* || true
+    echo
 }
 
 function ssh_whoami() {
@@ -223,14 +226,15 @@ function ssh_become() {
 function pass_list() {
     # list available pass credentail sets (diretories)
     info available pass credentials sets
-    ls -ld ~/.password-store.*
+    ls -ld ~/.password-store.* || true
+    echo
 }
 
 function pass_whoami() {
     # list current pass identity
     info Current pass credential set
     info
-    ls -ld ~/.password-store
+    ls -ld ~/.password-store || true
     info
 }
 
@@ -245,14 +249,15 @@ function pass_become() {
 function org_list() {
     # list available org credentail sets (diretories)
     info available org credentials sets
-    ls -ld ~/Org.*
+    ls -ld ~/Org.* || true
+    echo
 }
 
 function org_whoami() {
     # list current org identity
     info Current org credential set
     info
-    ls -ld ~/Org
+    ls -ld ~/Org || true
     info
 }
 
@@ -369,6 +374,7 @@ if [[ ! -v SSH && ! -v AWS && ! -v ORG && ! -v PASSWORD && ! -v GPG ]]; then
     die "Must specify at least one of '--aws' '--ssh' '--gnupg' '--pass'"
 fi
 
+
 # Change aws credentials
 
 if [ -v AWS ]; then
@@ -400,7 +406,6 @@ fi
 if [ -v GPG ]; then
 
     if [[ -v LIST ]]; then
-        echo GPG LIST
         gpg_list
     elif [[ -v WHOAMI ]]; then
         gpg_whoami
@@ -413,7 +418,6 @@ fi
 
 if [ -v PASSWORD ]; then
     if [[ -v LIST ]]; then
-        echo PASSWORD LIST
         pass_list
     elif [[ -v WHOAMI ]]; then
         pass_whoami
@@ -426,7 +430,6 @@ fi
 
 if [ -v ORG ]; then
     if [[ -v LIST ]]; then
-        echo ORG LIST
         org_list
     elif [[ -v WHOAMI ]]; then
         org_whoami
