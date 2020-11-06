@@ -114,7 +114,7 @@ function aws_list() {
     cd ~/.aws || die "Error connecting to ~/.aws"
 
     info available AWS credentials and configs
-    ls -1 credentials.* config.*
+    ls -ld credentials.* config.*
 }
 
 function aws_whoami() {
@@ -123,7 +123,7 @@ function aws_whoami() {
 
     info Current aws credentials
     info
-    ls -l credentials config
+    ls -ld credentials config
     info
 }
 
@@ -158,7 +158,7 @@ function ssh_list() {
     cd ~/.ssh || die "Error connecting to ~/.ssh"
 
     info available SSH credentials
-    ls -1 id_rsa.* id_dsa.*
+    ls -ld id_rsa.* id_dsa.* authorized_keys.*
 }
 
 function ssh_whoami() {
@@ -167,7 +167,8 @@ function ssh_whoami() {
 
     info Current SSH identities
     info
-    ls -l id_???  || warn "no ~/.ssh/id_{rsa,dsa} file"
+    ls -ld id_???  || warn "no ~/.ssh/id_{rsa,dsa} file"
+    ls -ld authorized_keys || warn "no authorized_keys file"
     info SSH Agent Identities
     ssh-add -l
     info
@@ -179,15 +180,18 @@ function ssh_become() {
 
     rsa_creds="id_rsa.""${who}"
     dsa_creds="id_dsa.""${who}"
+    authorized_keys="authorized_keys.""${who}"
 
     if [ -f "${dsa_creds}" ]; then
         ssh_creds="${dsa_creds}"
     elif [ -f "${rsa_creds}" ]; then
         ssh_creds="${rsa_creds}"
     else
-        echo "No ssh creds found. "${rsa_creds}" and "${dsa_creds}" do not exis."
+        echo "No ssh creds found. "${rsa_creds}" and "${dsa_creds}" do not exist."
         exit 1
     fi
+
+    # symlnk ssh creds into ~/.ssh
 
     target=`basename $ssh_creds ".""${who}"`
 
@@ -199,6 +203,20 @@ function ssh_become() {
         ssh-add "${ssh_creds}"
         [[ -v VERBOSE ]] && set -x
     fi
+
+
+    # symlnk authinfo creds into ~/.ssh
+
+    target=`basename $authorized_keys ".""${who}"`
+
+    if [ -f "${authorized_keys}"  ]; then
+        [[ -v VERBOSE ]] && set +x
+        rm -f "${target}" || true
+        ln -s "${authorized_keys}" "${target}"
+        chmod 644 "${target}"
+        [[ -v VERBOSE ]] && set -x
+    fi
+
 }
 
 
