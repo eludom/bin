@@ -1,5 +1,5 @@
 #! /bin/bash
-# change credentials
+# change credentials - symlink different credential files
 #
 # Usage: be [options] who
 
@@ -32,15 +32,41 @@
 #   If  ~/.ssh/id_{dsa,rsa}.$1 exists, link to ~/.ssh/id_{dsa,rsa} and add to ssh agent
 #   If  ~/.aws/credentials.$1 exists, link to ~/.aws/credentials
 #
-# TODO
-#  - deal with git identities
+# FILES
+#   * SSH Files
+#
+#     ~/.ssh/id_{dsa,rsa}.IDENTITY	- SSH identify file for IDENTITY
+#     ~/.ssh/id_{dsa,rsa}		- Symlink to SSH identity
+#
+#     ~/.ssh/authorized_keys.IDENTITY   - SSH authorized keys for IDENTITY
+#     ~/.ssh/authorized_keys            - Symlink to SSH authorized_keys file
+#
+#   * GPG Files
+#
+#   * AWS files
+#
+#   * pass(1) files
+#
+#   * org files
+#
+
+
+# TO DO ITEMS
+#
+# * TODO finish documenting FILES
+# * TODO deal with .pem files
+# * TODO maybe make this not bash (python? go?)
+# * TODO make a general configruation format for different identites
+#        - e.g. so that there would only be one "list" or "whoami" function
+#               for all identities
+# * TODO add documentation
+#
+# * TODO deal with git identities
 #     + Use XDG-CONFIG-HOME to switch identities?
 #       http://git.661346.n2.nabble.com/What-is-XDG-CONFIG-HOME-for-exactly-td7627117.html
 #    + See https://gist.github.com/jexchan/2351996
-#  - Deal with .pem files
 
-
-set -e; set -u
+set -e; set -u # this is bash.  Be safe out there.
 
 # Helper functions
 PROG=`basename "$0" | tr -d '\n'`
@@ -100,7 +126,7 @@ function gpg_whoami() {
     info Current gpg credential set
     info
     ls -ld ~/.gnupg || true
-    info
+    echo
 
 }
 
@@ -126,7 +152,7 @@ function aws_whoami() {
     info Current aws credentials
     info
     ls -ld credentials config || true
-    info
+    echo
 }
 
 function aws_become() {
@@ -174,7 +200,7 @@ function ssh_whoami() {
     ls -ld authorized_keys || warn "no authorized_keys file"
     info SSH Agent Identities
     ssh-add -l
-    info
+    echo
 }
 
 function ssh_become() {
@@ -235,7 +261,7 @@ function pass_whoami() {
     info Current pass credential set
     info
     ls -ld ~/.password-store || true
-    info
+    echo
 }
 
 function pass_become() {
@@ -258,7 +284,7 @@ function org_whoami() {
     info Current org credential set
     info
     ls -ld ~/Org || true
-    info
+    echo
 }
 
 function org_become() {
