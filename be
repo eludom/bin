@@ -149,7 +149,6 @@ function aws_list() {
 
 function aws_whoami() {
     # list current aws identity
-    echo foo
     if ! cd ~/.aws; then warn "No ~/.aws credentials"; echo; return; fi    
 
     info Current aws credentials
